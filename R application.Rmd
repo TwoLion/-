@@ -1,0 +1,187 @@
+---
+title: "Linear Algebra and application"
+author: "Seo Jae Hyun"
+date: '2021 8 3 '
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Application 
+
+<br />
+
+
+### 1. Linear Regression
+
+<br />
+
+#### Goal
+
+The data matrix(Explanatory variable and intercept) : X
+
+the response variable : Y
+
+We have to find $\beta$ satisfying
+
+$Y = X \beta$
+
+- We have to find $\beta$ which minimizes
+
+$||Y-X\beta||$
+
+To solve this least square problem, we just solve this equation
+
+$X^TX\beta = X^TY$
+
+If $X^TX$ is invertible, the solution is
+
+$\hat\beta = (X^TX)^{-1}X^TY$
+
+
+
+```{r linear regression}
+
+# data generating
+
+X=rnorm(100, 2, 0.1)
+error = rnorm(100, 0, 0.4)
+Y = 3* X + error
+
+
+# data plotting
+
+plot(X, Y, main='plot of X and Y')
+
+
+# Find beta
+
+
+X=matrix(c(rep(1, 100), X), nrow=100, byrow=F)
+
+
+betahat=solve(t(X)%*%X)%*%t(X)%*%Y
+
+
+plot(X[, 2], Y)
+abline(a=betahat[1, 1], b=betahat[2, 1], col='red')
+
+
+title('linear regression line')
+
+
+
+summary(lm(Y~X[, 2]))
+
+
+```
+
+  
+  
+  
+<br />
+    
+--------------------------
+
+<br />
+--------------------------
+<br />
+
+### 2. PCA
+<br />
+
+#### Goal
+
+The data matrix : X
+
+we want to reduce the dimension, minimizing the loss of data information
+
+We change the axis by using spectral decomposition 
+
+
+let $\tilde{X}$ : normalized(just subtract the mean of each columns, not deviding the standard deviation) matrix
+
+Then, $\frac{1}{n-1}\tilde{X}^T\tilde{X}$ : sample covariance matrix
+
+
+$\tilde{X}^T\tilde{X}$ : symmetric matrix 
+
+- $\tilde{X}^T\tilde{X} = PDP^T$, where $P$ : orthogonal matrix
+
+(columns of P consists of the eigenvectors of $\tilde{X}^T\tilde{X}$ and diagonal entris of D consists of the eigenvalues of $\tilde{X}^T\tilde{X}$)
+
+Then, let $Y = \tilde{X}P$
+
+The covariance matrix of Y :  $\frac{1}{n-1}Y^TY$ = $\frac{1}{n-1}D$
+
+It means that the new variables(columns) of Y are uncorrelated, and ith eigenvalues of $D$ is the variance of $Y_i$ 
+
+Also, in $Y = \tilde{X}P$
+
+The matrix P means change of coordinate matrix from standard basis to new basis consists of eigenvectors
+
+Therefore, the eigenvectors of $\tilde{X}^T\tilde{X}$ are the new axis of data which satisfy the covaraince matrix is  $\frac{1}{n-1}D$
+
+We can check the ratio of the eigenvalues, and reduce the dimension by removing the axis which has lower eigenvalue(variance)
+
+```{r PCA}
+
+# data generating
+
+X1=rnorm(100, 0, 4)
+X2=rnorm(100, 2, 3)
+X3=X1 - 3*X2 + rnorm(100, 0, 1)
+
+
+plot(data.frame(X1, X2, X3), main='scatterplot of X1, X2, X3')
+
+scatterplot3d::scatterplot3d(X1, X2, X3, main=c('scatter plot in 3d'))
+
+# normalizing
+
+A=matrix(c(X1, X2, X3), nrow=100, byrow=F)
+
+normalizedA=A-matrix(rep(apply(A, 2, mean), 100), nrow=100, byrow=T)
+
+plot(as.data.frame(normalizedA))
+
+
+# corvariance of A
+
+corA=t(normalizedA)%*%normalizedA
+
+corA/99
+
+
+# PCA
+
+P=eigen(corA)$vectors
+
+
+D=diag(eigen(corA)$values)
+
+Y=normalizedA%*%P
+
+t(Y)%*%Y/99
+
+
+plot(as.data.frame(Y), xlim=c(-25, 25), ylim=c(-25, 25), main='After PCA')
+
+
+scatterplot3d::scatterplot3d(Y[, 1], Y[, 2], Y[, 3], xlim=c(min(Y[, 1]), max(Y[, 1])), ylim=c(min(Y[, 1]), max(Y[, 1])), 
+                             zlim=c(min(Y[, 1]), max(Y[, 1])), main='After PCA')
+
+
+
+# conditional number
+
+diag(t(Y)%*%Y)/sum(diag(t(Y)%*%Y))
+
+# we can remove V3 axis 
+
+```
